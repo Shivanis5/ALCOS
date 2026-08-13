@@ -1,0 +1,446 @@
+/* ==========================================================
+   ALCOS Banking System · Theme QSS
+   Palette: Navy (#0b1a2e, #0d1f34) + Gold (#c9a84c, #e8c86a)
+   ========================================================== */
+
+QWidget {
+    background-color: #0b1a2e;
+    color: #e5ecf5;
+    font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    font-size: 13px;
+}
+QMainWindow, QDialog {
+    background-color: #0b1a2e;
+}
+QPushButton {
+    background-color: #1a304a;
+    color: #e5ecf5;
+    border: 1px solid #2a4a6a;
+    border-radius: 6px;
+    padding: 8px 18px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    min-height: 28px;
+}
+QPushButton:hover {
+    background-color: #2a4a6a;
+    border-color: #4a7a9a;
+}
+QPushButton:pressed {
+    background-color: #0f2239;
+}
+QPushButton[primary="true"] {
+    background-color: #c9a84c;
+    color: #0b1a2e;
+    border-color: #c9a84c;
+    font-weight: 600;
+}
+QPushButton[primary="true"]:hover {
+    background-color: #e8c86a;
+    border-color: #e8c86a;
+}
+QPushButton[primary="true"]:pressed {
+    background-color: #a8883a;
+    border-color: #a8883a;
+}
+QPushButton[danger="true"] {
+    background-color: #7a2a2a;
+    border-color: #9a3a3a;
+}
+QPushButton[danger="true"]:hover {
+    background-color: #9a3a3a;
+}
+QLabel {
+    color: #e5ecf5;
+}
+QLabel[heading="true"] {
+    font-size: 20px;
+    font-weight: 600;
+    color: #c9a84c;
+    letter-spacing: 2px;
+}
+QLabel[subheading="true"] {
+    font-size: 14px;
+    color: #8aa3c9;
+    letter-spacing: 1px;
+}
+QLabel[status="true"] {
+    color: #6a8bb0;
+    font-size: 12px;
+}
+QLineEdit, QTextEdit, QPlainTextEdit {
+    background-color: #0a1628;
+    color: #e5ecf5;
+    border: 1px solid #1a3a50;
+    border-radius: 6px;
+    padding: 6px 10px;
+    selection-background-color: #c9a84c;
+    selection-color: #0b1a2e;
+}
+QLineEdit:focus, QTextEdit:focus, QPlainTextEdit:focus {
+    border-color: #c9a84c;
+    outline: none;
+}
+QLineEdit:disabled, QTextEdit:disabled {
+    color: #4a6b8a;
+    background-color: #0d1f34;
+}
+QComboBox {
+    background-color: #0a1628;
+    color: #e5ecf5;
+    border: 1px solid #1a3a50;
+    border-radius: 6px;
+    padding: 5px 12px;
+    min-height: 28px;
+}
+QComboBox:hover {
+    border-color: #4a7a9a;
+}
+QComboBox:on {
+    border-color: #c9a84c;
+}
+QComboBox::drop-down {
+    subcontrol-origin: padding;
+    subcontrol-position: right center;
+    width: 20px;
+    border-left: 1px solid #1a3a50;
+}
+QComboBox::down-arrow {
+    image: none;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 6px solid #c9a84c;
+    margin-right: 6px;
+}
+QComboBox QAbstractItemView {
+    background-color: #0a1628;
+    color: #e5ecf5;
+    border: 1px solid #1a3a50;
+    selection-background-color: #1a304a;
+    selection-color: #c9a84c;
+}
+QCheckBox, QRadioButton {
+    color: #e5ecf5;
+    spacing: 8px;
+}
+QCheckBox::indicator, QRadioButton::indicator {
+    width: 16px;
+    height: 16px;
+    border: 2px solid #3a5a7a;
+    border-radius: 4px;
+    background-color: #0a1628;
+}
+QCheckBox::indicator:checked, QRadioButton::indicator:checked {
+    background-color: #c9a84c;
+    border-color: #c9a84c;
+}
+QRadioButton::indicator {
+    border-radius: 9px;
+}
+QRadioButton::indicator:checked {
+    border-radius: 9px;
+}
+QTableWidget, QTreeWidget, QListView {
+    background-color: #0a1628;
+    alternate-background-color: #0f2239;
+    gridline-color: #1a3a50;
+    border: 1px solid #1a3a50;
+    border-radius: 6px;
+}
+QHeaderView::section {
+    background-color: #0d1f34;
+    color: #c9a84c;
+    padding: 6px 12px;
+    border: 1px solid #1a3a50;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+}
+QTableWidget::item, QTreeWidget::item {
+    padding: 5px;
+    border: none;
+}
+QTableWidget::item:selected, QTreeWidget::item:selected {
+    background-color: #1a304a;
+    color: #e8c86a;
+}
+QScrollBar:vertical {
+    background-color: #0a1628;
+    width: 12px;
+    margin: 0px;
+}
+QScrollBar::handle:vertical {
+    background-color: #1a3a50;
+    border-radius: 6px;
+    min-height: 30px;
+}
+QScrollBar::handle:vertical:hover {
+    background-color: #2a5a7a;
+}
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+    height: 0px;
+}
+QScrollBar:horizontal {
+    background-color: #0a1628;
+    height: 12px;
+    margin: 0px;
+}
+QScrollBar::handle:horizontal {
+    background-color: #1a3a50;
+    border-radius: 6px;
+    min-width: 30px;
+}
+QScrollBar::handle:horizontal:hover {
+    background-color: #2a5a7a;
+}
+QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
+    width: 0px;
+}
+QTabWidget::pane {
+    border: 1px solid #1a3a50;
+    border-radius: 6px;
+    background-color: #0b1a2e;
+}
+QTabBar::tab {
+    background-color: #0a1628;
+    color: #8aa3c9;
+    padding: 8px 20px;
+    margin-right: 2px;
+    border: 1px solid #1a3a50;
+    border-bottom: none;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+}
+QTabBar::tab:selected {
+    background-color: #0d1f34;
+    color: #c9a84c;
+    border-color: #c9a84c;
+}
+QTabBar::tab:hover:!selected {
+    background-color: #1a304a;
+    color: #e5ecf5;
+}
+QMenuBar {
+    background-color: #0a1628;
+    color: #e5ecf5;
+    border-bottom: 1px solid #1a3a50;
+}
+QMenuBar::item {
+    padding: 6px 14px;
+    background: transparent;
+}
+QMenuBar::item:selected {
+    background-color: #1a304a;
+    color: #c9a84c;
+}
+QMenu {
+    background-color: #0a1628;
+    border: 1px solid #1a3a50;
+    border-radius: 6px;
+    padding: 4px 0px;
+}
+QMenu::item {
+    padding: 6px 30px 6px 20px;
+    color: #e5ecf5;
+}
+QMenu::item:selected {
+    background-color: #1a304a;
+    color: #c9a84c;
+}
+QMenu::separator {
+    height: 1px;
+    background-color: #1a3a50;
+    margin: 4px 8px;
+}
+QStatusBar {
+    background-color: #0a1628;
+    color: #6a8bb0;
+    border-top: 1px solid #1a3a50;
+    padding: 2px 10px;
+}
+QGroupBox {
+    border: 1px solid #1a3a50;
+    border-radius: 8px;
+    margin-top: 14px;
+    padding-top: 10px;
+}
+QGroupBox::title {
+    subcontrol-origin: margin;
+    left: 14px;
+    padding: 0 8px;
+    color: #c9a84c;
+    letter-spacing: 1px;
+}
+QProgressBar {
+    background-color: #0a1628;
+    border: 1px solid #1a3a50;
+    border-radius: 6px;
+    text-align: center;
+    color: #e5ecf5;
+    height: 20px;
+}
+QProgressBar::chunk {
+    background-color: #c9a84c;
+    border-radius: 6px;
+}
+QToolTip {
+    background-color: #0d1f34;
+    color: #e8c86a;
+    border: 1px solid #c9a84c;
+    border-radius: 4px;
+    padding: 4px 10px;
+}
+QMessageBox {
+    background-color: #0b1a2e;
+}
+QMessageBox QPushButton {
+    min-width: 80px;
+}
+QLabel#lcTitle {
+    font-size: 28px;
+    font-weight: 700;
+    color: #c9a84c;
+    letter-spacing: 4px;
+}
+QLabel#lcSubtitle {
+    font-size: 14px;
+    color: #8aa3c9;
+    letter-spacing: 3px;
+}
+QLineEdit#lcAmount {
+    font-size: 18px;
+    font-weight: 600;
+    color: #e8c86a;
+}
+/* ==========================================================
+   ALCOS Dashboard Components
+   ========================================================== */
+
+
+/* ------------------------------
+   Sidebar
+   ------------------------------ */
+
+#sidebar {
+
+    background-color: #081522;
+
+    border-right: 1px solid #1a3a50;
+
+}
+
+
+/* ------------------------------
+   Header
+   ------------------------------ */
+
+#header {
+
+    background-color: #0d1f34;
+
+    border-bottom: 1px solid #1a3a50;
+
+    border-radius: 8px;
+
+}
+
+
+#headerTitle {
+
+    color: #c9a84c;
+
+    font-size: 20px;
+
+    font-weight: 700;
+
+}
+
+
+/* ------------------------------
+   Statistics Cards
+   ------------------------------ */
+
+
+#statCard {
+
+    background-color: #10263d;
+
+    border-radius: 14px;
+
+    border: 1px solid #254866;
+
+}
+
+
+#statCard:hover {
+
+    border: 1px solid #c9a84c;
+
+}
+
+
+#statTitle {
+
+    color: #8aa3c9;
+
+    font-size: 14px;
+
+    font-weight: 600;
+
+}
+
+
+#statValue {
+
+    color: #e8c86a;
+
+    font-size: 32px;
+
+    font-weight: 700;
+
+}
+
+
+
+/* ------------------------------
+   Recent LC Table
+   ------------------------------ */
+
+
+#recentLCTable {
+
+    background-color: #10263d;
+
+    border-radius: 12px;
+
+    border: 1px solid #1a3a50;
+
+    padding: 10px;
+
+}
+
+
+#sectionTitle {
+
+    color: #c9a84c;
+
+    font-size: 18px;
+
+    font-weight: 700;
+
+}
+
+
+/* ------------------------------
+   Welcome Label
+   ------------------------------ */
+
+
+#welcomeLabel {
+
+    color: #8aa3c9;
+
+    font-size: 16px;
+
+    font-weight: 500;
+
+}
