@@ -15,6 +15,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
 )
 
+from app.core.context import get_context
 from app.core.database import DatabaseManager
 from app.core.lc_workflow import LCStage
 from app.services.lc_workflow_service import (
@@ -53,7 +54,34 @@ class ScrutinyWidget(QWidget):
             self.db
         )
 
+        self.context = get_context()
+
+        self.context.currentLCChanged.connect(
+            self._on_context_lc_changed
+        )
+
+        self.context.currentLCCleared.connect(
+            self._on_context_lc_cleared
+        )
+
         self.setup_ui()
+
+        if self.context.has_lc:
+            self.lc_number_input.setText(
+                self.context.current_lc_number
+            )
+
+    def _on_context_lc_changed(self, lc_id: int, lc_number: str):
+        """Synchronize the LC field with the shared context."""
+        self.lc_number_input.setText(lc_number)
+
+    def _on_context_lc_cleared(self):
+        """Clear the LC reference so actions cannot hit a stale LC."""
+        self.lc_number_input.clear()
+
+    def _operator(self) -> str:
+        """Authenticated operator for workflow history records."""
+        return self.context.current_user or "USER"
 
     def setup_ui(self):
         layout = QVBoxLayout(self)
@@ -380,7 +408,7 @@ class ScrutinyWidget(QWidget):
                     .strip()
                     or None
                 ),
-                performed_by="USER",
+                performed_by=self._operator(),
             )
 
             decision = result["decision"]
@@ -395,7 +423,7 @@ class ScrutinyWidget(QWidget):
                         "Scrutiny passed. "
                         "LC released to documents."
                     ),
-                    performed_by="USER",
+                    performed_by=self._operator(),
                 )
 
                 message = (
@@ -414,7 +442,7 @@ class ScrutinyWidget(QWidget):
                         "Scrutiny identified issues "
                         "requiring amendment."
                     ),
-                    performed_by="USER",
+                    performed_by=self._operator(),
                 )
 
                 message = (
@@ -446,6 +474,17 @@ class ScrutinyWidget(QWidget):
         current = self.workflow.get_workflow(
             lc_id
         )
+
+        if self.context.current_lc_id == lc_id and current is not None:
+            self.context.update_lc_metadata(
+                {
+                    "current_stage": int(
+                        current["current_stage"]
+                    ),
+                    "stage_status": current["stage_status"],
+                    "overall_status": current["overall_status"],
+                }
+            )
 
         self.status_label.setText(
             f"{lc_number}: "

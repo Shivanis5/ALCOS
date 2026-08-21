@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
 )
 
+from app.core.context import get_context
 from app.core.database import DatabaseManager
 from app.services.discrepancy_service import DiscrepancyService
 
@@ -31,11 +32,43 @@ class DiscrepancyWidget(QWidget):
 
         self.db = DatabaseManager()
         self.service = DiscrepancyService(self.db)
+        self.context = get_context()
 
         self.current_lc_id = None
         self.current_rows = []
 
+        self.context.currentLCChanged.connect(
+            self._on_context_lc_changed
+        )
+
+        self.context.currentLCCleared.connect(
+            self._on_context_lc_cleared
+        )
+
         self.setup_ui()
+
+        if self.context.has_lc:
+            self.lc_number.setText(
+                self.context.current_lc_number
+            )
+
+    def _on_context_lc_changed(self, lc_id: int, lc_number: str):
+        """Synchronize with the shared context; drop stale rows."""
+        self.lc_number.setText(lc_number)
+        self.current_lc_id = None
+        self.current_rows = []
+        self.table.setRowCount(0)
+
+    def _on_context_lc_cleared(self):
+        """Clear the LC reference so actions cannot hit a stale LC."""
+        self.lc_number.clear()
+        self.current_lc_id = None
+        self.current_rows = []
+        self.table.setRowCount(0)
+
+    def _operator(self) -> str:
+        """Authenticated operator for audit records."""
+        return self.context.current_user or "USER"
 
     def setup_ui(self):
         layout = QVBoxLayout(self)
@@ -330,7 +363,7 @@ class DiscrepancyWidget(QWidget):
                         .strip()
                         or None
                     ),
-                    created_by="USER",
+                    created_by=self._operator(),
                 )
             )
 

@@ -14,10 +14,13 @@ from PySide6.QtWidgets import (
     QPushButton,
     QHBoxLayout,
     QGridLayout,
+    QMessageBox,
 )
 
 from PySide6.QtCore import QDate
 
+from app.core.context import get_context
+from app.core.logger import LoggerManager
 from app.services.transaction_service import TransactionService
 
 
@@ -32,6 +35,8 @@ class GeneralInformationWidget(QWidget):
         super().__init__()
 
         self.transaction_service = TransactionService()
+        self.logger = LoggerManager()
+        self.context = get_context()
 
         self.setup_ui()
 
@@ -423,27 +428,78 @@ class GeneralInformationWidget(QWidget):
 
     def save_transaction(self):
 
-        self.transaction_service.create_transaction(
+        lc_number = self.lc_number.text().strip()
 
-            self.transaction_id.text(),
+        if not lc_number:
+            QMessageBox.warning(
+                self,
+                "Save Transaction",
+                "LC Number is required.",
+            )
+            return
 
-            self.transaction_reference.text(),
+        try:
+            amount = float(
+                self.amount.text() or 0
+            )
 
-            self.lc_number.text(),
+        except ValueError:
+            QMessageBox.warning(
+                self,
+                "Save Transaction",
+                "Enter a valid numeric amount.",
+            )
+            return
 
-            self.applicant_name.text(),
+        try:
+            lc_id = self.transaction_service.create_transaction(
 
-            self.beneficiary_name.text(),
+                self.transaction_id.text(),
 
-            float(self.amount.text() or 0),
+                self.transaction_reference.text(),
 
-            self.currency.currentText(),
+                lc_number,
 
-            self.status.currentText(),
+                self.applicant_name.text(),
 
-            self.issue_date.date().toString("yyyy-MM-dd"),
+                self.beneficiary_name.text(),
 
-            self.expiry_date.date().toString("yyyy-MM-dd"),
+                amount,
+
+                self.currency.currentText(),
+
+                self.status.currentText(),
+
+                self.issue_date.date().toString("yyyy-MM-dd"),
+
+                self.expiry_date.date().toString("yyyy-MM-dd"),
+            )
+
+        except Exception as exc:
+            self.logger.exception(
+                f"Failed to save transaction {lc_number}."
+            )
+            QMessageBox.critical(
+                self,
+                "Save Transaction",
+                f"The transaction could not be saved:\n{exc}",
+            )
+            return
+
+        # Publish the saved LC to the shared application context so all
+        # stage modules operate on the same lc_id without retyping.
+        self.context.set_current_lc(
+            lc_id,
+            lc_number,
         )
 
-        print("Transaction Saved")  
+        self.logger.info(
+            f"Transaction {lc_number} saved (lc_id={lc_id})."
+        )
+
+        QMessageBox.information(
+            self,
+            "Save Transaction",
+            f"{lc_number} saved successfully.\n\n"
+            "This LC is now the current LC in the workspace.",
+        )

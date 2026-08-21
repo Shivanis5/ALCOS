@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from PySide6.QtCore import QDate
 
+from app.core.context import get_context
 from app.services.mt700_service import MT700Service
 from app.services.swift_service import SwiftService
 from app.services.mt700_pdf_service import MT700PDFService
@@ -43,7 +44,22 @@ class MT700Widget(QWidget):
 
         self.current_lc = None
 
+        self.context = get_context()
+
+        self.context.currentLCChanged.connect(
+            self._on_context_lc_changed
+        )
+
         self.setup_ui()
+
+        if self.context.has_lc:
+            self.field20.setText(
+                self.context.current_lc_number
+            )
+
+    def _on_context_lc_changed(self, lc_id: int, lc_number: str):
+        """Prefill the LC reference field from the shared context."""
+        self.field20.setText(lc_number)
 
     def setup_ui(self):
 
@@ -372,7 +388,14 @@ class MT700Widget(QWidget):
 
             return
 
-        print(lc_number)
+        # Truthful placeholder: loading stored MT700 records from the
+        # database is implemented in the MT700 hardening phase.
+        QMessageBox.information(
+            self,
+            "Load MT700",
+            "Loading a stored MT700 record is not available yet.\n\n"
+            "The MT700 form currently works with manually entered data.",
+        )
 
     ####################################################
     # Generate PDF

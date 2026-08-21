@@ -4,9 +4,12 @@ from typing import Optional
 
 from PySide6.QtWidgets import QApplication
 
+from app.core.context import get_context
 from app.core.database import DatabaseManager
 from app.core.logger import LoggerManager
 from app.core.theme import ThemeManager
+
+from app.services.auth_service import AuthService
 
 from app.views.boot_screen import BootScreen
 from app.views.login_screen import LoginScreen
@@ -23,8 +26,9 @@ class ALCOSApplication:
     - Theme loading
     - Database initialization
     - Boot Screen
-    - Login Screen
+    - Login Screen (with first-admin bootstrap)
     - Dashboard
+    - Shared application context (authenticated user)
     """
 
     def __init__(self, app: QApplication) -> None:
@@ -34,6 +38,10 @@ class ALCOSApplication:
         self.logger: Optional[LoggerManager] = None
         self.theme_manager: Optional[ThemeManager] = None
         self.database_manager: Optional[DatabaseManager] = None
+
+        self.context = get_context()
+
+        self.auth_service: Optional[AuthService] = None
 
         self.boot_screen: Optional[BootScreen] = None
         self.login_screen: Optional[LoginScreen] = None
@@ -128,13 +136,48 @@ class ALCOSApplication:
         if self.boot_screen:
             self.boot_screen.close()
 
-        self.login_screen = LoginScreen()
+        self.auth_service = AuthService()
+
+        self.login_screen = LoginScreen(
+            auth_service=self.auth_service
+        )
 
         self.login_screen.loginSuccessful.connect(
-            self.show_dashboard
+            self._handle_login
         )
 
         self.login_screen.show()
+
+    #################################################################
+    # Authentication Handling
+    #################################################################
+
+    def _handle_login(
+        self,
+        username: str,
+        password: str,
+    ) -> None:
+        """
+        Verify credentials and enter the dashboard on success.
+
+        On failure the login screen stays open and shows a truthful
+        error. Passwords are never logged.
+        """
+        if not self.auth_service:
+            return
+
+        result = self.auth_service.authenticate(username, password)
+
+        if not result.success:
+            if self.login_screen:
+                self.login_screen.show_auth_error(
+                    result.error or "Login failed."
+                )
+            return
+
+        self.context.set_user(result.username, result.role)
+
+        self.show_dashboard(result.username)
 
     #################################################################
     # Dashboard

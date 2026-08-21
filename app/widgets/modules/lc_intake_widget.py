@@ -9,6 +9,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
 )
 
+from app.core.context import get_context
 from app.core.database import DatabaseManager
 from app.core.lc_workflow import LCStage, StageStatus
 from app.services.lc_workflow_service import LCWorkflowService
@@ -35,8 +36,22 @@ class LCIntakeWidget(QWidget):
 
         self.db = DatabaseManager()
         self.workflow = LCWorkflowService(self.db)
+        self.context = get_context()
+
+        self.context.currentLCChanged.connect(
+            self._on_context_lc_changed
+        )
+
+        self.context.currentLCCleared.connect(
+            self._on_context_lc_cleared
+        )
 
         self.setup_ui()
+
+        if self.context.has_lc:
+            self.lc_number_input.setText(
+                self.context.current_lc_number
+            )
 
     def setup_ui(self):
         layout = QVBoxLayout(self)
@@ -137,6 +152,18 @@ class LCIntakeWidget(QWidget):
 
         layout.addStretch()
 
+    def _on_context_lc_changed(self, lc_id: int, lc_number: str):
+        """Synchronize the LC field with the shared context."""
+        self.lc_number_input.setText(lc_number)
+
+    def _on_context_lc_cleared(self):
+        """Drop the LC reference so actions cannot hit a stale LC."""
+        self.lc_number_input.clear()
+
+    def _operator(self) -> str:
+        """Authenticated operator for workflow history records."""
+        return self.context.current_user or "USER"
+
     def complete_intake(self):
         lc_number = self.lc_number_input.text().strip()
 
@@ -214,7 +241,7 @@ class LCIntakeWidget(QWidget):
                     "LC intake completed after "
                     "user verification."
                 ),
-                performed_by="USER",
+                performed_by=self._operator(),
             )
 
             self.workflow.transition_stage(
@@ -225,7 +252,7 @@ class LCIntakeWidget(QWidget):
                     "LC released from Intake "
                     "to PO Matching."
                 ),
-                performed_by="USER",
+                performed_by=self._operator(),
             )
 
         except Exception as exc:
@@ -236,10 +263,32 @@ class LCIntakeWidget(QWidget):
             )
             return
 
+        self._refresh_lc_context(lc_id)
+
         QMessageBox.information(
             self,
             "LC Intake Complete",
             f"{lc_number} completed Stage 1.\n\n"
             "Current Stage: 2 — PO Matching",
+        )
+
+    def _refresh_lc_context(self, lc_id: int):
+        """Publish the new workflow position to the shared context."""
+        if self.context.current_lc_id != lc_id:
+            return
+
+        workflow = self.workflow.get_workflow(lc_id)
+
+        if workflow is None:
+            return
+
+        self.context.update_lc_metadata(
+            {
+                "current_stage": int(
+                    workflow["current_stage"]
+                ),
+                "stage_status": workflow["stage_status"],
+                "overall_status": workflow["overall_status"],
+            }
         )
 

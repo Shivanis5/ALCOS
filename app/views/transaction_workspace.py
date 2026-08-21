@@ -5,7 +5,14 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QVBoxLayout,
     QStackedWidget,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QMessageBox,
 )
+
+from app.core.context import get_context
+from app.core.database import DatabaseManager
 
 from app.widgets.transaction_sidebar import (
     TransactionSidebar,
@@ -84,6 +91,9 @@ class TransactionWorkspace(QWidget):
     def __init__(self):
         super().__init__()
 
+        self.db = DatabaseManager()
+        self.context = get_context()
+
         self.setup_ui()
 
     ##################################################
@@ -119,6 +129,12 @@ class TransactionWorkspace(QWidget):
         self.header = TransactionHeader()
 
         right_layout.addWidget(self.header)
+
+        ##################################################
+        # LC Context Bar
+        ##################################################
+
+        self._build_lc_bar(right_layout)
 
         ##################################################
         # Module Stack
@@ -271,6 +287,141 @@ class TransactionWorkspace(QWidget):
                 self.mt707_widget
             )
         )
+
+        self.general_widget.continueToMT700.connect(
+            lambda: self.stack.setCurrentWidget(
+                self.mt700_widget
+            )
+        )
+
+    ##################################################
+    # LC Context Bar
+    ##################################################
+
+    def _build_lc_bar(self, parent_layout):
+
+        bar = QHBoxLayout()
+
+        label = QLabel("Current LC:")
+
+        self.lc_input = QLineEdit()
+
+        self.lc_input.setPlaceholderText(
+            "Open LC by number (e.g. LC202600001)"
+        )
+
+        self.open_lc_button = QPushButton("Open LC")
+
+        self.close_lc_button = QPushButton("Close LC")
+
+        self.open_lc_button.clicked.connect(
+            self._open_lc_from_input
+        )
+
+        self.close_lc_button.clicked.connect(
+            self.context.clear_current_lc
+        )
+
+        bar.addWidget(label)
+        bar.addWidget(self.lc_input, 1)
+        bar.addWidget(self.open_lc_button)
+        bar.addWidget(self.close_lc_button)
+
+        parent_layout.addLayout(bar)
+
+    def _open_lc_from_input(self):
+        """Open the LC typed into the context bar."""
+        lc_number = self.lc_input.text().strip()
+
+        if not lc_number:
+            QMessageBox.warning(
+                self,
+                "Open LC",
+                "Enter an LC number to open.",
+            )
+            return
+
+        lc = self.db.fetchone(
+            """
+            SELECT id
+            FROM letters_of_credit
+            WHERE lc_number = ?
+            """,
+            (lc_number,),
+        )
+
+        if lc is None:
+            QMessageBox.warning(
+                self,
+                "Open LC",
+                f"LC {lc_number} was not found.",
+            )
+            return
+
+        self.open_for_lc(int(lc["id"]))
+
+    def open_for_lc(self, lc_id: int):
+        """
+        Open an LC in the shared application context.
+
+        Validates existence before publishing so no widget can act on a
+        nonexistent LC. All stage modules synchronize through context.
+        """
+        lc = self.db.fetchone(
+            """
+            SELECT id, lc_number, applicant, beneficiary,
+                   currency, amount, status, issue_date, expiry_date
+            FROM letters_of_credit
+            WHERE id = ?
+            """,
+            (int(lc_id),),
+        )
+
+        if lc is None:
+            QMessageBox.warning(
+                self,
+                "Open LC",
+                f"LC id {lc_id} does not exist.",
+            )
+            return
+
+        workflow = self.db.fetchone(
+            """
+            SELECT current_stage, stage_status, overall_status
+            FROM lc_workflow_state
+            WHERE lc_id = ?
+            """,
+            (int(lc_id),),
+        )
+
+        metadata = {
+            "applicant": lc["applicant"],
+            "beneficiary": lc["beneficiary"],
+            "currency": lc["currency"],
+            "amount": lc["amount"],
+            "status": lc["status"],
+            "issue_date": lc["issue_date"],
+            "expiry_date": lc["expiry_date"],
+        }
+
+        if workflow is not None:
+            metadata.update(
+                {
+                    "current_stage": int(
+                        workflow["current_stage"]
+                    ),
+                    "stage_status": workflow["stage_status"],
+                    "overall_status": workflow["overall_status"],
+                }
+            )
+
+        self.context.set_current_lc(
+            int(lc["id"]),
+            lc["lc_number"],
+            metadata,
+        )
+
+        self.lc_input.setText(lc["lc_number"])
 
     ##################################################
     # Module Navigation

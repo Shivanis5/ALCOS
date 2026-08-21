@@ -18,6 +18,10 @@ from PySide6.QtWidgets import (
 )
 
 from app.core.config import APP_NAME, APP_VERSION, IMAGES_DIR
+from app.services.auth_service import (
+    AuthError,
+    AuthService,
+)
 
 _FADE_IN_DURATION_MS: int = 700
 _PANEL_WIDTH: int = 480
@@ -26,18 +30,32 @@ _PANEL_WIDTH: int = 480
 class LoginScreen(QWidget):
     """Professional banking-style login screen for ALCOS.
 
-    Displays credential fields and emits ``loginSuccessful`` when the user
-    submits valid input. Authentication and navigation are handled elsewhere.
+    Displays credential fields and emits ``loginSuccessful`` carrying the
+    entered credentials. Authentication is performed by the application
+    controller; failures are reported back through ``show_auth_error``.
+
+    When no local user account exists yet, the screen switches to an
+    explicit ``Create Initial Administrator`` bootstrap mode so the
+    application can never lock itself out on first launch.
 
     The login screen opens frameless in full-screen mode with a centered
     login panel to resemble a real operating-system sign-in experience.
     """
 
-    loginSuccessful = Signal(str)
+    loginSuccessful = Signal(str, str)
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        auth_service: AuthService | None = None,
+    ) -> None:
         """Initialize the login screen and build its user interface."""
         super().__init__()
+
+        self.auth_service = auth_service or AuthService()
+
+        self._bootstrap_mode: bool = not (
+            self.auth_service.has_any_user()
+        )
 
         self.logo_label = QLabel()
         self.title_label = QLabel(APP_NAME)
@@ -50,6 +68,8 @@ class LoginScreen(QWidget):
         self.username_input = QLineEdit()
         self.password_label = QLabel("Password")
         self.password_input = QLineEdit()
+        self.confirm_password_label = QLabel("Confirm Password")
+        self.confirm_password_input = QLineEdit()
         self.remember_checkbox = QCheckBox("Remember Me")
         self.login_button = QPushButton("Login")
         self.footer_label = QLabel(
@@ -62,6 +82,7 @@ class LoginScreen(QWidget):
         self._setup_ui()
         self._load_logo()
         self._connect_signals()
+        self._apply_mode()
 
     def _setup_ui(self) -> None:
         """Build and configure the login screen user interface."""
@@ -112,6 +133,16 @@ class LoginScreen(QWidget):
         self.password_input.setObjectName("passwordInput")
         self._configure_input_field(self.password_input)
 
+        self.confirm_password_label.setAlignment(
+            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
+        )
+        self.confirm_password_input.setPlaceholderText(
+            "Repeat Password"
+        )
+        self.confirm_password_input.setEchoMode(QLineEdit.EchoMode.Password)
+        self.confirm_password_input.setObjectName("confirmPasswordInput")
+        self._configure_input_field(self.confirm_password_input)
+
         self.remember_checkbox.setObjectName("rememberCheckbox")
 
         self.login_button.setObjectName("loginButton")
@@ -137,6 +168,8 @@ class LoginScreen(QWidget):
         panel_layout.addWidget(self.username_input)
         panel_layout.addWidget(self.password_label)
         panel_layout.addWidget(self.password_input)
+        panel_layout.addWidget(self.confirm_password_label)
+        panel_layout.addWidget(self.confirm_password_input)
         panel_layout.addWidget(self.remember_checkbox)
         panel_layout.addSpacing(8)
         panel_layout.addWidget(self.login_button)
@@ -153,7 +186,12 @@ class LoginScreen(QWidget):
         self.setLayout(main_layout)
 
         QWidget.setTabOrder(self.username_input, self.password_input)
-        QWidget.setTabOrder(self.password_input, self.remember_checkbox)
+        QWidget.setTabOrder(
+            self.password_input, self.confirm_password_input
+        )
+        QWidget.setTabOrder(
+            self.confirm_password_input, self.remember_checkbox
+        )
         QWidget.setTabOrder(self.remember_checkbox, self.login_button)
 
     def _configure_input_field(self, field: QLineEdit) -> None:
@@ -195,9 +233,43 @@ class LoginScreen(QWidget):
 
     def _connect_signals(self) -> None:
         """Connect UI signals to login screen handlers."""
-        self.login_button.clicked.connect(self._attempt_login)
-        self.username_input.returnPressed.connect(self._attempt_login)
-        self.password_input.returnPressed.connect(self._attempt_login)
+        self.login_button.clicked.connect(self._on_submit)
+        self.username_input.returnPressed.connect(self._on_submit)
+        self.password_input.returnPressed.connect(self._on_submit)
+        self.confirm_password_input.returnPressed.connect(
+            self._on_submit
+        )
+
+    #################################################################
+    # Bootstrap / login mode handling
+    #################################################################
+
+    def _apply_mode(self) -> None:
+        """Show bootstrap or normal-login controls for current mode."""
+        is_bootstrap = self._bootstrap_mode
+
+        self.heading_label.setText(
+            "Create Initial Administrator"
+            if is_bootstrap
+            else "User Login"
+        )
+
+        self.login_button.setText(
+            "Create Initial Administrator"
+            if is_bootstrap
+            else "Login"
+        )
+
+        self.confirm_password_label.setVisible(is_bootstrap)
+        self.confirm_password_input.setVisible(is_bootstrap)
+        self.remember_checkbox.setVisible(not is_bootstrap)
+
+    def _on_submit(self) -> None:
+        """Dispatch submit according to the active mode."""
+        if self._bootstrap_mode:
+            self._attempt_bootstrap()
+        else:
+            self._attempt_login()
 
     def _load_logo(self) -> None:
         """Load the company logo when available.
@@ -247,7 +319,66 @@ class LoginScreen(QWidget):
             self.password_input.setFocus()
             return
 
-        self.loginSuccessful.emit(username)
+        self.loginSuccessful.emit(username, password)
+
+    def _attempt_bootstrap(self) -> None:
+        """Create the initial administrator, then switch to login mode."""
+        username = self.username_input.text().strip()
+        password = self.password_input.text()
+        confirmation = self.confirm_password_input.text()
+
+        try:
+            self.auth_service.create_initial_admin(
+                username,
+                password,
+                confirmation,
+            )
+
+        except AuthError as exc:
+            QMessageBox.warning(
+                self,
+                "Administrator Setup",
+                str(exc),
+            )
+            return
+
+        except Exception:
+            self.auth_service.logger.exception(
+                "Unexpected failure during administrator bootstrap."
+            )
+            QMessageBox.critical(
+                self,
+                "Administrator Setup",
+                "The administrator account could not be created. "
+                "Please try again.",
+            )
+            return
+
+        self.password_input.clear()
+        self.confirm_password_input.clear()
+
+        self._bootstrap_mode = False
+        self._apply_mode()
+
+        self.username_input.setFocus()
+
+        QMessageBox.information(
+            self,
+            "Administrator Created",
+            f"Administrator '{username}' was created.\n\n"
+            "Please sign in with your new credentials.",
+        )
+
+    def show_auth_error(self, message: str) -> None:
+        """Display an authentication failure reported by the controller."""
+        self.password_input.clear()
+        self.password_input.setFocus()
+
+        QMessageBox.warning(
+            self,
+            "Login Failed",
+            message,
+        )
 
     def keyPressEvent(self, event: QKeyEvent) -> None:
         """Handle keyboard shortcuts for the login screen.

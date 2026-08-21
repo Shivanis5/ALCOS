@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
     QDialogButtonBox,
 )
 
+from app.core.context import get_context
 from app.core.database import DatabaseManager
 from app.services.po_matching_service import (
     POMatchingService,
@@ -33,11 +34,43 @@ class POMatchingWidget(QWidget):
 
         self.db = DatabaseManager()
         self.service = POMatchingService(self.db)
+        self.context = get_context()
 
         self.current_lc_id = None
         self.candidates = []
 
+        self.context.currentLCChanged.connect(
+            self._on_context_lc_changed
+        )
+
+        self.context.currentLCCleared.connect(
+            self._on_context_lc_cleared
+        )
+
         self.setup_ui()
+
+        if self.context.has_lc:
+            self.lc_number_input.setText(
+                self.context.current_lc_number
+            )
+
+    def _on_context_lc_changed(self, lc_id: int, lc_number: str):
+        """Synchronize with the shared context; drop stale candidates."""
+        self.lc_number_input.setText(lc_number)
+        self.current_lc_id = None
+        self.candidates = []
+        self.table.setRowCount(0)
+
+    def _on_context_lc_cleared(self):
+        """Clear the LC reference so actions cannot hit a stale LC."""
+        self.lc_number_input.clear()
+        self.current_lc_id = None
+        self.candidates = []
+        self.table.setRowCount(0)
+
+    def _operator(self) -> str:
+        """Authenticated operator for workflow history records."""
+        return self.context.current_user or "USER"
 
     def setup_ui(self):
         layout = QVBoxLayout(self)
@@ -426,7 +459,7 @@ class POMatchingWidget(QWidget):
             result = self.service.select_match(
                 self.current_lc_id,
                 candidate["po_id"],
-                performed_by="USER",
+                performed_by=self._operator(),
             )
 
         except Exception as exc:
@@ -436,6 +469,8 @@ class POMatchingWidget(QWidget):
                 str(exc),
             )
             return
+
+        self._refresh_lc_context(self.current_lc_id)
 
         self.status_label.setText(
             f"Selected PO: "
@@ -448,4 +483,31 @@ class POMatchingWidget(QWidget):
             "PO Matching",
             "PO selected successfully. "
             "Stage 2 is now completed.",
+        )
+
+    def _refresh_lc_context(self, lc_id: int):
+        """Publish the new workflow position to the shared context."""
+        if self.context.current_lc_id != lc_id:
+            return
+
+        workflow = self.db.fetchone(
+            """
+            SELECT current_stage, stage_status, overall_status
+            FROM lc_workflow_state
+            WHERE lc_id = ?
+            """,
+            (lc_id,),
+        )
+
+        if workflow is None:
+            return
+
+        self.context.update_lc_metadata(
+            {
+                "current_stage": int(
+                    workflow["current_stage"]
+                ),
+                "stage_status": workflow["stage_status"],
+                "overall_status": workflow["overall_status"],
+            }
         )
