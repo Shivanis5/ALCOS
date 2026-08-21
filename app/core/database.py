@@ -123,6 +123,110 @@ _SCHEMA_STATEMENTS: tuple[str, ...] = (
     )
     """,
     """
+    CREATE TABLE IF NOT EXISTS purchase_orders (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        po_number TEXT NOT NULL UNIQUE,
+        applicant TEXT,
+        beneficiary TEXT,
+        amount REAL,
+        currency TEXT,
+        issue_date TEXT,
+        delivery_date TEXT,
+        status TEXT NOT NULL DEFAULT 'OPEN',
+        source_system TEXT NOT NULL DEFAULT 'LOCAL',
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS lc_po_matches (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        lc_id INTEGER NOT NULL,
+        po_id INTEGER NOT NULL,
+        match_score REAL NOT NULL,
+        applicant_score REAL,
+        beneficiary_score REAL,
+        amount_score REAL,
+        currency_score REAL,
+        date_score REAL,
+        candidate_rank INTEGER,
+        match_status TEXT NOT NULL DEFAULT 'SUGGESTED',
+        is_selected INTEGER NOT NULL DEFAULT 0,
+        notes TEXT,
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+        UNIQUE (lc_id, po_id),
+
+        FOREIGN KEY (lc_id)
+            REFERENCES letters_of_credit(id)
+            ON DELETE CASCADE,
+
+        FOREIGN KEY (po_id)
+            REFERENCES purchase_orders(id)
+            ON DELETE CASCADE
+    )
+    """,
+    """
+    CREATE INDEX IF NOT EXISTS idx_lc_po_matches_lc
+    ON lc_po_matches(lc_id)
+    """,
+    """
+    CREATE INDEX IF NOT EXISTS idx_lc_po_matches_selected
+    ON lc_po_matches(lc_id, is_selected)
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS lc_scrutiny_results (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        lc_id INTEGER NOT NULL,
+        validation_status TEXT NOT NULL,
+        risk_level TEXT NOT NULL,
+        risk_score REAL,
+        compliance_status TEXT NOT NULL,
+        discrepancy_count INTEGER NOT NULL DEFAULT 0,
+        decision TEXT NOT NULL,
+        notes TEXT,
+        performed_by TEXT,
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+        FOREIGN KEY (lc_id)
+            REFERENCES letters_of_credit(id)
+            ON DELETE CASCADE
+    )
+    """,
+    """
+    CREATE INDEX IF NOT EXISTS idx_lc_scrutiny_results_lc
+    ON lc_scrutiny_results(lc_id)
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS lc_discrepancies (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        lc_id INTEGER NOT NULL,
+        discrepancy_type TEXT NOT NULL,
+        severity TEXT NOT NULL,
+        field_reference TEXT,
+        current_text TEXT,
+        required_text TEXT,
+        reason TEXT,
+        status TEXT NOT NULL DEFAULT 'OPEN',
+        created_by TEXT,
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        resolved_at TEXT,
+
+        FOREIGN KEY (lc_id)
+            REFERENCES letters_of_credit(id)
+            ON DELETE CASCADE
+    )
+    """,
+    """
+    CREATE INDEX IF NOT EXISTS idx_lc_discrepancies_lc
+    ON lc_discrepancies(lc_id)
+    """,
+    """
+    CREATE INDEX IF NOT EXISTS idx_lc_discrepancies_status
+    ON lc_discrepancies(lc_id, status)
+    """,
+    """
     CREATE TABLE IF NOT EXISTS lc_workflow_state (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         lc_id INTEGER NOT NULL UNIQUE,

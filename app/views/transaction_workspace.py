@@ -19,6 +19,22 @@ from app.widgets.modules.general_information_widget import (
     GeneralInformationWidget,
 )
 
+from app.widgets.modules.lc_intake_widget import (
+    LCIntakeWidget,
+)
+
+from app.widgets.modules.po_matching_widget import (
+    POMatchingWidget,
+)
+
+from app.widgets.modules.scrutiny_widget import (
+    ScrutinyWidget,
+)
+
+from app.widgets.modules.amendments_widget import (
+    AmendmentsWidget,
+)
+
 from app.widgets.modules.mt700_widget import (
     MT700Widget,
 )
@@ -116,6 +132,14 @@ class TransactionWorkspace(QWidget):
 
         self.general_widget = GeneralInformationWidget()
 
+        self.lc_intake_widget = LCIntakeWidget()
+
+        self.po_matching_widget = POMatchingWidget()
+
+        self.scrutiny_widget = ScrutinyWidget()
+
+        self.amendments_widget = AmendmentsWidget()
+
         self.mt700_widget = MT700Widget()
 
         self.mt707_widget = MT707Widget()
@@ -141,6 +165,14 @@ class TransactionWorkspace(QWidget):
         ##################################################
 
         self.stack.addWidget(self.general_widget)
+
+        self.stack.addWidget(self.lc_intake_widget)
+
+        self.stack.addWidget(self.po_matching_widget)
+
+        self.stack.addWidget(self.scrutiny_widget)
+
+        self.stack.addWidget(self.amendments_widget)
 
         self.stack.addWidget(self.mt700_widget)
 
@@ -186,6 +218,60 @@ class TransactionWorkspace(QWidget):
             self.load_module
         )
 
+        self.lc_intake_widget.openGeneral.connect(
+            lambda: self.stack.setCurrentWidget(
+                self.general_widget
+            )
+        )
+
+        self.lc_intake_widget.openOCR.connect(
+            lambda: self.stack.setCurrentWidget(
+                self.ocr_widget
+            )
+        )
+
+        self.lc_intake_widget.openMT700.connect(
+            lambda: self.stack.setCurrentWidget(
+                self.mt700_widget
+            )
+        )
+
+        self.scrutiny_widget.openValidation.connect(
+            lambda: self.stack.setCurrentWidget(
+                self.validation_widget
+            )
+        )
+
+        self.scrutiny_widget.openRisk.connect(
+            lambda: self.stack.setCurrentWidget(
+                self.risk_widget
+            )
+        )
+
+        self.scrutiny_widget.openCompliance.connect(
+            lambda: self.stack.setCurrentWidget(
+                self.compliance_widget
+            )
+        )
+
+        self.amendments_widget.openDiscrepancy.connect(
+            lambda: self.stack.setCurrentWidget(
+                self.discrepancy_widget
+            )
+        )
+
+        self.amendments_widget.openMT707.connect(
+            lambda: self.stack.setCurrentWidget(
+                self.mt707_widget
+            )
+        )
+
+        self.discrepancy_widget.openMT707.connect(
+            lambda: self.stack.setCurrentWidget(
+                self.mt707_widget
+            )
+        )
+
     ##################################################
     # Module Navigation
     ##################################################
@@ -195,6 +281,14 @@ class TransactionWorkspace(QWidget):
         pages = {
 
             "general": self.general_widget,
+
+            "intake": self.lc_intake_widget,
+
+            "po_matching": self.po_matching_widget,
+
+            "scrutiny": self.scrutiny_widget,
+
+            "amendments": self.amendments_widget,
 
             "mt700": self.mt700_widget,
 

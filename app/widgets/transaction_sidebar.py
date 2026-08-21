@@ -35,6 +35,10 @@ class TransactionSidebar(QWidget):
 
         modules = [
             ("📋 General Information", "general"),
+            ("1️⃣ LC Intake", "intake"),
+            ("2️⃣ PO Matching", "po_matching"),
+            ("3️⃣ Scrutiny", "scrutiny"),
+            ("4️⃣ Amendments", "amendments"),
             ("📄 MT700", "mt700"),
             ("✏️ MT707", "mt707"),
             ("📁 Documents", "documents"),
